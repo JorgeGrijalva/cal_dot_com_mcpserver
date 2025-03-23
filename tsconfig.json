@@ -8,9 +8,15 @@
       "rootDir": ".",
       "strict": true,
       "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true
+      "forceConsistentCasingInFileNames": true,
+      "resolveJsonModule": true,
+      "lib": ["ES2020"]
     },
     "include": [
-      "./**/*.ts"
+      "index.ts"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist"
     ]
   }

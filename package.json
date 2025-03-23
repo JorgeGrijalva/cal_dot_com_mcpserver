@@ -14,17 +14,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
-    "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "watch": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.1",
+    "@modelcontextprotocol/sdk": "^1.0.1",
     "axios": "^1.6.7"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "^18.18.0",
     "shx": "^0.3.4",
-    "typescript": "^5.6.2"
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

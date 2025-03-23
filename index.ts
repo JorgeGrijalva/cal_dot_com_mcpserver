@@ -135,7 +135,7 @@ const server = new Server(
 );
 
 // Check for API key
-const CALCOM_API_KEY = process.env.CALCOM_API_KEY!;
+const CALCOM_API_KEY = process.env.CALCOM_API_KEY || '';
 if (!CALCOM_API_KEY) {
   console.error("Error: CALCOM_API_KEY environment variable is required");
   process.exit(1);
@@ -284,11 +284,11 @@ Start Time: ${booking.startTime}
 End Time: ${booking.endTime}
 Attendee: ${name} (${email})
 ${notes ? `Notes: ${notes}` : ""}`;
-  } catch (error) {
+  } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to create appointment: ${error.response?.data?.message || error.message}`);
     }
-    throw new Error(`Failed to create appointment: ${error}`);
+    throw new Error(`Failed to create appointment: ${String(error)}`);
   }
 }
 
@@ -315,11 +315,11 @@ async function updateAppointment(
 ${startTime ? `New Start Time: ${booking.startTime}` : ""}
 ${endTime ? `New End Time: ${booking.endTime}` : ""}
 ${notes !== undefined ? `New Notes: ${notes}` : ""}`;
-  } catch (error) {
+  } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to update appointment: ${error.response?.data?.message || error.message}`);
     }
-    throw new Error(`Failed to update appointment: ${error}`);
+    throw new Error(`Failed to update appointment: ${String(error)}`);
   }
 }
 
@@ -333,11 +333,11 @@ async function deleteAppointment(bookingId: number, reason?: string) {
     
     return `Appointment deleted successfully! Booking ID: ${bookingId}
 ${reason ? `Reason: ${reason}` : ""}`;
-  } catch (error) {
+  } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to delete appointment: ${error.response?.data?.message || error.message}`);
     }
-    throw new Error(`Failed to delete appointment: ${error}`);
+    throw new Error(`Failed to delete appointment: ${String(error)}`);
   }
 }
 
@@ -367,11 +367,11 @@ End Time: ${booking.endTime}
 Attendees: ${booking.attendees.map((a: any) => `${a.name} (${a.email})`).join(", ")}
 ${booking.notes ? `Notes: ${booking.notes}` : ""}
 `).join("\n---\n");
-  } catch (error) {
+  } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to list appointments: ${error.response?.data?.message || error.message}`);
     }
-    throw new Error(`Failed to list appointments: ${error}`);
+    throw new Error(`Failed to list appointments: ${String(error)}`);
   }
 }
 
@@ -448,7 +448,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           isError: true,
         };
     }
-  } catch (error) {
+  } catch (error: any) {
     return {
       content: [
         {
@@ -467,7 +467,7 @@ async function runServer() {
   console.error("Cal.com Calendar MCP Server running on stdio");
 }
 
-runServer().catch((error) => {
+runServer().catch((error: any) => {
   console.error("Fatal error running server:", error);
   process.exit(1);
 });
