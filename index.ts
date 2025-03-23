@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import { CalComAPI } from "@calcom/api";
+import axios from "axios";
 
 const ADD_APPOINTMENT_TOOL: Tool = {
   name: "calcom_add_appointment",
@@ -142,8 +142,12 @@ if (!CALCOM_API_KEY) {
 }
 
 // Initialize Cal.com API client
-const calComClient = new CalComAPI({
-  apiKey: CALCOM_API_KEY,
+const calComApiClient = axios.create({
+  baseURL: 'https://api.cal.com/v1',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CALCOM_API_KEY}`
+  }
 });
 
 // Rate limiting
@@ -263,14 +267,16 @@ async function addAppointment(
   checkRateLimit();
   
   try {
-    const booking = await calComClient.bookings.create({
+    const response = await calComApiClient.post('/bookings', {
       eventTypeId,
-      start: new Date(startTime),
-      end: new Date(endTime),
+      start: new Date(startTime).toISOString(),
+      end: new Date(endTime).toISOString(),
       name,
       email,
       notes,
     });
+    
+    const booking = response.data;
     
     return `Appointment created successfully! Booking ID: ${booking.id}
 Event Type: ${booking.eventTypeId}
@@ -279,6 +285,9 @@ End Time: ${booking.endTime}
 Attendee: ${name} (${email})
 ${notes ? `Notes: ${notes}` : ""}`;
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to create appointment: ${error.response?.data?.message || error.message}`);
+    }
     throw new Error(`Failed to create appointment: ${error}`);
   }
 }
@@ -292,19 +301,24 @@ async function updateAppointment(
   checkRateLimit();
   
   try {
-    const updateData: any = {};
+    const updateData: Record<string, any> = {};
     
-    if (startTime) updateData.start = new Date(startTime);
-    if (endTime) updateData.end = new Date(endTime);
+    if (startTime) updateData.start = new Date(startTime).toISOString();
+    if (endTime) updateData.end = new Date(endTime).toISOString();
     if (notes !== undefined) updateData.notes = notes;
     
-    const booking = await calComClient.bookings.update(bookingId, updateData);
+    const response = await calComApiClient.patch(`/bookings/${bookingId}`, updateData);
+    
+    const booking = response.data;
     
     return `Appointment updated successfully! Booking ID: ${booking.id}
 ${startTime ? `New Start Time: ${booking.startTime}` : ""}
 ${endTime ? `New End Time: ${booking.endTime}` : ""}
 ${notes !== undefined ? `New Notes: ${notes}` : ""}`;
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to update appointment: ${error.response?.data?.message || error.message}`);
+    }
     throw new Error(`Failed to update appointment: ${error}`);
   }
 }
@@ -313,11 +327,16 @@ async function deleteAppointment(bookingId: number, reason?: string) {
   checkRateLimit();
   
   try {
-    await calComClient.bookings.delete(bookingId, reason);
+    await calComApiClient.delete(`/bookings/${bookingId}`, {
+      data: reason ? { reason } : undefined
+    });
     
     return `Appointment deleted successfully! Booking ID: ${bookingId}
 ${reason ? `Reason: ${reason}` : ""}`;
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to delete appointment: ${error.response?.data?.message || error.message}`);
+    }
     throw new Error(`Failed to delete appointment: ${error}`);
   }
 }
@@ -326,25 +345,32 @@ async function listAppointments(startDate: string, endDate: string) {
   checkRateLimit();
   
   try {
-    const bookings = await calComClient.bookings.list({
-      dateFrom: startDate,
-      dateTo: endDate,
+    const response = await calComApiClient.get('/bookings', {
+      params: {
+        dateFrom: startDate,
+        dateTo: endDate,
+      }
     });
+    
+    const bookings = response.data;
     
     if (bookings.length === 0) {
       return "No appointments found for the selected date range.";
     }
     
-    return bookings.map(booking => `
+    return bookings.map((booking: any) => `
 ID: ${booking.id}
 Event Type: ${booking.eventTypeId}
 Status: ${booking.status}
 Start Time: ${booking.startTime}
 End Time: ${booking.endTime}
-Attendees: ${booking.attendees.map(a => `${a.name} (${a.email})`).join(", ")}
+Attendees: ${booking.attendees.map((a: any) => `${a.name} (${a.email})`).join(", ")}
 ${booking.notes ? `Notes: ${booking.notes}` : ""}
 `).join("\n---\n");
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to list appointments: ${error.response?.data?.message || error.message}`);
+    }
     throw new Error(`Failed to list appointments: ${error}`);
   }
 }

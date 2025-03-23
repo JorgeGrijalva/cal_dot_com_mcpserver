@@ -1,19 +1,19 @@
 # Smithery configuration file: https://smithery.ai/docs/deployments
 
 build:
-  dockerBuildPath: ../../
+  dockerBuildPath: .
 startCommand:
   type: stdio
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
     required:
-      - braveApiKey
+      - calcomApiKey
     properties:
-      braveApiKey:
+      calcomApiKey:
         type: string
-        description: The API key for the BRAVE Search server.
+        description: The API key for the Cal.com Calendar API.
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    config=>({command:'node',args:['dist/index.js'],env:{BRAVE_API_KEY:config.braveApiKey}})
+    config=>({command:'node',args:['dist/index.js'],env:{CALCOM_API_KEY:config.calcomApiKey}})
