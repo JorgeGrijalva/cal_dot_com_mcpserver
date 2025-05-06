@@ -1,9 +1,12 @@
 {
-  "name": "@modelcontextprotocol/server-calcom-calendar",
-  "version": "0.6.2",
+  "name": "@modelcontextprotocol/calcom-calendar",
+  "version": "0.6.3",
   "description": "MCP server for Cal.com Calendar API integration",
   "license": "MIT",
-  "author": "Anthropic, PBC (https://anthropic.com)",
+  "author": {
+    "name": "Arturo Grijalva",
+    "email": "georgegrijalva75@gmail.com"
+  },
   "homepage": "https://modelcontextprotocol.io",
   "bugs": "https://github.com/modelcontextprotocol/servers/issues",
   "type": "module",
