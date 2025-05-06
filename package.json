@@ -1,5 +1,5 @@
 {
-  "name": "@modelcontextprotocol/calcom-calendar",
+  "name": "mcp-server-calcom-calendar",
   "version": "0.6.3",
   "description": "MCP server for Cal.com Calendar API integration",
   "license": "MIT",

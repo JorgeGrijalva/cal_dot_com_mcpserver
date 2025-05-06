@@ -84,7 +84,7 @@ Add this to your `claude_desktop_config.json`:
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-calcom-calendar"
+        "mcp-server-calcom-calendar"
       ],
       "env": {
         "CALCOM_API_KEY": "YOUR_API_KEY_HERE"
