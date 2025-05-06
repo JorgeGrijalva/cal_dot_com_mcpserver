@@ -143,13 +143,21 @@ if (!CALCOM_API_KEY) {
 
 // Initialize Cal.com API client
 const calComApiClient = axios.create({
-  baseURL: 'https://api.cal.com/v1',
+  baseURL: 'https://api.cal.com/v2', // Updated to v2
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${CALCOM_API_KEY}`
+    // Authorization header removed for v2, apiKey will be a query param
   }
 });
 
+// Add an interceptor to include the apiKey in every request's query parameters
+calComApiClient.interceptors.request.use(config => {
+  config.params = {
+    ...config.params,
+    apiKey: CALCOM_API_KEY
+  };
+  return config;
+});
 // Rate limiting
 const RATE_LIMIT = {
   perSecond: 5,
@@ -268,22 +276,30 @@ async function addAppointment(
   
   try {
     const response = await calComApiClient.post('/bookings', {
-      eventTypeId,
       start: new Date(startTime).toISOString(),
       end: new Date(endTime).toISOString(),
-      name,
-      email,
-      notes,
+      eventTypeId,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Or a specific one if known
+      language: "en", // Or make configurable
+      title: `Meeting with ${name}`, // Construct a title
+      description: notes, // Map notes to description
+      responses: {
+        name,
+        email,
+        // location: "Default Location if any" // Optional: add if you have this info
+        // notes: "Attendee specific notes" // Optional: if notes were attendee-specific
+      },
+      // status: "ACCEPTED" // Optional: default is PENDING
     });
     
-    const booking = response.data;
+    const bookingData = response.data.booking; // Booking data is nested under "booking" key
     
-    return `Appointment created successfully! Booking ID: ${booking.id}
-Event Type: ${booking.eventTypeId}
-Start Time: ${booking.startTime}
-End Time: ${booking.endTime}
+    return `Appointment created successfully! Booking ID: ${bookingData.id}
+Event Type: ${bookingData.eventTypeId}
+Start Time: ${bookingData.startTime}
+End Time: ${bookingData.endTime}
 Attendee: ${name} (${email})
-${notes ? `Notes: ${notes}` : ""}`;
+${notes ? `Notes: ${notes}` : ""}`; // Using input notes for the confirmation message
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to create appointment: ${error.response?.data?.message || error.message}`);
@@ -305,16 +321,16 @@ async function updateAppointment(
     
     if (startTime) updateData.start = new Date(startTime).toISOString();
     if (endTime) updateData.end = new Date(endTime).toISOString();
-    if (notes !== undefined) updateData.notes = notes;
+    if (notes !== undefined) updateData.description = notes; // Map notes to description
     
     const response = await calComApiClient.patch(`/bookings/${bookingId}`, updateData);
     
-    const booking = response.data;
+    const bookingData = response.data.booking; // Booking data is nested under "booking" key
     
-    return `Appointment updated successfully! Booking ID: ${booking.id}
-${startTime ? `New Start Time: ${booking.startTime}` : ""}
-${endTime ? `New End Time: ${booking.endTime}` : ""}
-${notes !== undefined ? `New Notes: ${notes}` : ""}`;
+    return `Appointment updated successfully! Booking ID: ${bookingData.id}
+${startTime ? `New Start Time: ${bookingData.startTime}` : ""}
+${endTime ? `New End Time: ${bookingData.endTime}` : ""}
+${notes !== undefined ? `New Notes: ${notes}` : ""}`; // Using input notes for confirmation
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to update appointment: ${error.response?.data?.message || error.message}`);
@@ -327,12 +343,15 @@ async function deleteAppointment(bookingId: number, reason?: string) {
   checkRateLimit();
   
   try {
-    await calComApiClient.delete(`/bookings/${bookingId}`, {
+    const response = await calComApiClient.delete(`/bookings/${bookingId}`, {
       data: reason ? { reason } : undefined
     });
     
-    return `Appointment deleted successfully! Booking ID: ${bookingId}
-${reason ? `Reason: ${reason}` : ""}`;
+    let message = "Appointment deleted successfully!";
+    if (response.data && response.data.message) {
+      message = response.data.message;
+    }
+    return `${message} Booking ID: ${bookingId}${reason ? `\nReason: ${reason}` : ""}`;
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
       throw new Error(`Failed to delete appointment: ${error.response?.data?.message || error.message}`);
@@ -352,20 +371,20 @@ async function listAppointments(startDate: string, endDate: string) {
       }
     });
     
-    const bookings = response.data;
+    const bookingsArray = response.data.bookings; // Bookings list is under "bookings" key
     
-    if (bookings.length === 0) {
+    if (!bookingsArray || bookingsArray.length === 0) {
       return "No appointments found for the selected date range.";
     }
     
-    return bookings.map((booking: any) => `
+    return bookingsArray.map((booking: any) => `
 ID: ${booking.id}
 Event Type: ${booking.eventTypeId}
 Status: ${booking.status}
 Start Time: ${booking.startTime}
 End Time: ${booking.endTime}
 Attendees: ${booking.attendees.map((a: any) => `${a.name} (${a.email})`).join(", ")}
-${booking.notes ? `Notes: ${booking.notes}` : ""}
+${booking.description ? `Notes: ${booking.description}` : ""} 
 `).join("\n---\n");
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
