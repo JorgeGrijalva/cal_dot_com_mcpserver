@@ -146,7 +146,7 @@ const calComApiClient = axios.create({
   baseURL: "https://api.cal.com/v2",
   headers: {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${CALCOM_API_KEY}`,
+    Authorization: `apiKey=${CALCOM_API_KEY}`, // Changed from Bearer to apiKey= based on Cal.com v2 API docs
   },
 });
 // Rate limiting
